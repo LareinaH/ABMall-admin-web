@@ -37,6 +37,33 @@ const pageModel = modelExtend(model, {
         },
       }
     },
+    showError (state) {
+      return {
+        ...state,
+        errorVisible: false,
+      }
+    },
+    hideError (state) {
+      return {
+        ...state,
+        errorVisible: false,
+      }
+    },
+    //  设置state中的某个值
+    setData (state, { payload }) {
+      let { key, value } = payload
+      return {
+        ...state,
+        [key]: value,
+      }
+    },
+    //  设置state中的多个属性
+    setPayload (state, { payload }) {
+      return {
+        ...state,
+        ...payload,
+      }
+    },
   },
 
 })
