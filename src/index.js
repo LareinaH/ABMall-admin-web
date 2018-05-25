@@ -1,25 +1,30 @@
-import { message } from 'antd'
-import dva from 'dva'
-import createLoading from 'dva-loading'
-import createHistory from 'history/createBrowserHistory'
-import 'babel-polyfill'
+import '@babel/polyfill';
+import 'url-polyfill';
+import dva from 'dva';
 
+import createHistory from 'history/createHashHistory';
+// user BrowserHistory
+// import createHistory from 'history/createBrowserHistory';
+import createLoading from 'dva-loading';
+import 'moment/locale/zh-cn';
+import './rollbar';
+
+import './index.less';
 // 1. Initialize
 const app = dva({
-  ...createLoading({
-    effects: true,
-  }),
   history: createHistory(),
-  onError (error) {
-    message.error(error.message)
-  },
-})
+});
 
-// 2. Model
-app.model(require('./models/app'))
+// 2. Plugins
+app.use(createLoading());
 
-// 3. Router
-app.router(require('./router'))
+// 3. Register global model
+app.model(require('./models/global').default);
 
-// 4. Start
-app.start('#root')
+// 4. Router
+app.router(require('./router').default);
+
+// 5. Start
+app.start('#root');
+
+export default app._store; // eslint-disable-line

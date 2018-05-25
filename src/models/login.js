@@ -1,29 +1,58 @@
-import { routerRedux } from 'dva/router'
-import { login } from 'services/login'
+import { routerRedux } from 'dva/router';
+import { fakeAccountLogin } from '../services/api';
+import { setAuthority } from '../utils/authority';
+import { reloadAuthorized } from '../utils/Authorized';
 
 export default {
   namespace: 'login',
 
-  state: {},
+  state: {
+    status: undefined,
+  },
 
   effects: {
-    * login ({
-      payload,
-    }, { put, call, select }) {
-      const data = yield call(login, payload)
-      const { locationQuery } = yield select(_ => _.app)
-      if (data.success) {
-        const { from } = locationQuery
-        yield put({ type: 'app/query' })
-        if (from && from !== '/login') {
-          yield put(routerRedux.push(from))
-        } else {
-          yield put(routerRedux.push('/dashboard'))
-        }
-      } else {
-        throw data
+    *login({ payload }, { call, put }) {
+      const response = yield call(fakeAccountLogin, payload);
+      yield put({
+        type: 'changeLoginStatus',
+        payload: response,
+      });
+      // Login successfully
+      if (response.status === 'ok') {
+        reloadAuthorized();
+        yield put(routerRedux.push('/'));
+      }
+    },
+    *logout(_, { put, select }) {
+      try {
+        // get location pathname
+        const urlParams = new URL(window.location.href);
+        const pathname = yield select(state => state.routing.location.pathname);
+        // add the parameters in the url
+        urlParams.searchParams.set('redirect', pathname);
+        window.history.replaceState(null, 'login', urlParams.href);
+      } finally {
+        yield put({
+          type: 'changeLoginStatus',
+          payload: {
+            status: false,
+            currentAuthority: 'guest',
+          },
+        });
+        reloadAuthorized();
+        yield put(routerRedux.push('/user/login'));
       }
     },
   },
 
-}
+  reducers: {
+    changeLoginStatus(state, { payload }) {
+      setAuthority(payload.currentAuthority);
+      return {
+        ...state,
+        status: payload.status,
+        type: payload.type,
+      };
+    },
+  },
+};
